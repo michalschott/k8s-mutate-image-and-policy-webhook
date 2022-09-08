@@ -4,7 +4,6 @@ import (
 	"flag"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/sqooba/go-common/logging"
-	"github.com/sqooba/go-common/version"
 	"net/http"
 )
 
@@ -37,10 +36,6 @@ type mutationWH struct {
 
 func main() {
 	log.Println("k8s-mutate-image-and-policy-webhook is starting...")
-	log.Printf("Version    : %s", version.Version)
-	log.Printf("Commit     : %s", version.GitCommit)
-	log.Printf("Build date : %s", version.BuildDate)
-	log.Printf("OSarch     : %s", version.OsArch)
 
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {

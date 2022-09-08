@@ -1,29 +1,14 @@
-FROM --platform=$BUILDPLATFORM golang as builder
-
-ARG TARGETOS
-ARG TARGETARCH
-ARG VERSION
-ARG BUILD_DATE
-
-COPY . /src
-
+FROM golang:1.19.1 as builder
+COPY go.* /src/
+COPY *.go /src/
+COPY vendor /src/vendor
 WORKDIR /src
+RUN go test &&\
+    CGO_ENABLED=0 go build -mod=vendor -o k8s-mutate-image-and-policy-webhook .
 
-RUN env GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go mod download && \
-  export GIT_COMMIT=$(git rev-parse HEAD) && \
-  export GIT_DIRTY=$(test -n "`git status --porcelain`" && echo "+CHANGES" || true) && \
-  env GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 \
-    go build -o k8s-mutate-image-and-policy-webhook \
-    -ldflags "-X github.com/sqooba/go-common/version.GitCommit=${GIT_COMMIT}${GIT_DIRTY} \
-              -X github.com/sqooba/go-common/version.BuildDate=${BUILD_DATE} \
-              -X github.com/sqooba/go-common/version.Version=${VERSION}" \
-    .
-
-FROM --platform=$BUILDPLATFORM gcr.io/distroless/base
-
+FROM scratch
+COPY --from=builder /etc/ssl/certs/ /etc/ssl/certs/
 COPY --from=builder /src/k8s-mutate-image-and-policy-webhook /k8s-mutate-image-and-policy-webhook
-
-USER nobody
-
+USER 65534
 ENTRYPOINT ["/k8s-mutate-image-and-policy-webhook"]
 EXPOSE 8443
